@@ -20,6 +20,7 @@ MCP server for the Web2API project.
 """
 import os
 import sys
+import traceback
 from typing import Any, Dict, List
 
 # --- ensure project root is on sys.path so `mcp_server.*` imports work ---
@@ -186,7 +187,15 @@ def main() -> None:
     """
     Entry point for running the MCP server over stdio.
     """
-    mcp.run(transport="stdio")
+    try:
+        mcp.run(transport="stdio")
+    except Exception:
+        # Log the full traceback to stderr so Claude can show it in logs
+        print("Fatal error in MCP server:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        # Re-raise so the process still exits (Claude will see disconnect)
+        raise
+
 
 
 if __name__ == "__main__":
