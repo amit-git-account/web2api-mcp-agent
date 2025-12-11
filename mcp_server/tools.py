@@ -9,6 +9,9 @@ Later, these will be wired into a real MCP server implementation.
 
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
+from .adapters.hackernews import fetch_top_posts
+from .utils.http_client import HttpError
+
 
 
 @dataclass
@@ -34,30 +37,32 @@ class Tool:
 
 def hn_get_top_posts_handler(args: Dict[str, Any]) -> Any:
     """
-    Placeholder handler for a Hacker News tool.
+    Handler for Hacker News tool.
 
-    Eventually, this will:
-    - Fetch the HN front page
-    - Parse the HTML
-    - Return a JSON-serializable list of posts
-
-    For now, it just returns a static dummy payload so we can wire up the plumbing.
+    - Reads 'limit' from args (default 10)
+    - Uses the Hacker News adapter to fetch live data
+    - Returns a list of posts (JSON-serializable)
     """
-    limit = args.get("limit", 10)
+    raw_limit = args.get("limit", 10)
 
-    # Dummy data to prove the plumbing works.
-    sample_posts = [
-        {
-            "title": "Example HN post",
-            "link": "https://news.ycombinator.com/",
-            "rank": 1,
-            "points": 123,
-            "comments": 45,
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        limit = 10
+
+    if limit <= 0:
+        limit = 10
+
+    try:
+        posts = fetch_top_posts(limit=limit)
+    except HttpError as exc:
+        return {
+            "error": "Failed to fetch Hacker News posts",
+            "details": str(exc),
         }
-    ]
 
-    # Respect the limit argument (even in dummy mode)
-    return sample_posts[: int(limit)]
+    return posts
+
 
 
 # --- Tool registry -------------------------------------------------------- #
