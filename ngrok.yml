@@ -1,0 +1,11 @@
+version: "2"
+authtoken: 2qfnMAE6nNmq8gUeYjWzSFRvK9R_7VyZWkSz9CJBkUYhHTzbb
+
+tunnels:
+  web2api:
+    addr: 5000
+    proto: http
+    schemes:
+      - https
+    allow_cidr: 0.0.0.0/0
+
