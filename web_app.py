@@ -3,9 +3,10 @@ web_app.py
 
 Simple web UI for the Web2API MCP project.
 
-- Shows a form to enter `limit`
-- Calls the `hn_get_top_posts_handler` under the hood
-- Renders posts in a basic HTML table
+- Shows a form to select `source` (Hacker News, Product Hunt, Reddit)
+- Shows a `limit` field
+- Calls the corresponding *_handler under the hood
+- Renders items in a basic HTML table
 
 Run with:
     python3 web_app.py
@@ -18,8 +19,11 @@ from typing import Any, Dict, List
 
 from flask import Flask, render_template_string, request
 
-from mcp_server.tools import hn_get_top_posts_handler
-
+from mcp_server.tools import (
+    hn_get_top_posts_handler,
+    ph_get_top_products_handler,
+    reddit_get_top_posts_handler,
+)
 
 app = Flask(__name__)
 
@@ -29,7 +33,7 @@ TEMPLATE = """
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Web2API MCP – Hacker News UI</title>
+    <title>Web2API MCP – Aggregator</title>
     <style>
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -50,12 +54,23 @@ TEMPLATE = """
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         display: inline-flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+      }
+      label {
+        font-size: 0.85rem;
+        color: #333;
+      }
+      select,
+      input[type="number"] {
+        padding: 0.3rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        font-size: 0.9rem;
       }
       input[type="number"] {
         width: 80px;
-        padding: 0.3rem 0.5rem;
       }
       button {
         padding: 0.4rem 0.9rem;
@@ -65,6 +80,7 @@ TEMPLATE = """
         background: #2563eb;
         color: #fff;
         font-weight: 500;
+        font-size: 0.9rem;
       }
       button:hover {
         background: #1d4ed8;
@@ -98,6 +114,10 @@ TEMPLATE = """
         width: 90px;
         text-align: right;
       }
+      .source-col {
+        width: 110px;
+        white-space: nowrap;
+      }
       .error {
         margin-bottom: 1rem;
         padding: 0.75rem 1rem;
@@ -120,22 +140,42 @@ TEMPLATE = """
     </style>
   </head>
   <body>
-    <h1>Web2API MCP – Hacker News</h1>
+    <h1>Web2API MCP – Aggregator</h1>
     <div class="subtitle">
-      Fetch top posts from Hacker News via your Web2API tool.
+      Fetch top items from Hacker News, Product Hunt, or Reddit via your Web2API tools.
     </div>
 
     <form method="get" action="/">
-      <label for="limit">Posts:</label>
-      <input
-        type="number"
-        id="limit"
-        name="limit"
-        min="1"
-        max="50"
-        value="{{ limit }}"
-      />
-      <button type="submit">Fetch</button>
+      <div>
+        <label for="source">Source</label><br>
+        <select id="source" name="source">
+          <option value="hackernews" {{ 'selected' if selected_source == 'hackernews' else '' }}>
+            Hacker News
+          </option>
+          <option value="producthunt" {{ 'selected' if selected_source == 'producthunt' else '' }}>
+            Product Hunt
+          </option>
+          <option value="reddit" {{ 'selected' if selected_source == 'reddit' else '' }}>
+            Reddit (r/all)
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label for="limit">Items</label><br>
+        <input
+          type="number"
+          id="limit"
+          name="limit"
+          min="1"
+          max="50"
+          value="{{ limit }}"
+        />
+      </div>
+
+      <div>
+        <button type="submit">Fetch</button>
+      </div>
     </form>
 
     {% if error %}
@@ -154,7 +194,8 @@ TEMPLATE = """
             <th class="rank">#</th>
             <th>Title</th>
             <th>Link</th>
-            <th class="points">Points</th>
+            <th class="source-col">Source</th>
+            <th class="points">Points / Votes</th>
             <th class="comments">Comments</th>
           </tr>
         </thead>
@@ -164,12 +205,31 @@ TEMPLATE = """
               <td class="rank">{{ post.rank or "-" }}</td>
               <td>{{ post.title }}</td>
               <td>
-                <a href="{{ post.link }}" target="_blank" rel="noopener noreferrer">
-                  {{ post.link }}
-                </a>
+                {% if post.link %}
+                  <a href="{{ post.link }}" target="_blank" rel="noopener noreferrer">
+                    {{ post.link }}
+                  </a>
+                {% else %}
+                  -
+                {% endif %}
               </td>
-              <td class="points">{{ post.points if post.points is not none else "-" }}</td>
-              <td class="comments">{{ post.comments if post.comments is not none else "-" }}</td>
+              <td class="source-col">
+                {{ post.source or "-" }}
+              </td>
+              <td class="points">
+                {% if post.points is not none %}
+                  {{ post.points }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="comments">
+                {% if post.comments is not none %}
+                  {{ post.comments }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -177,7 +237,8 @@ TEMPLATE = """
     {% endif %}
 
     <div class="footer">
-      Backed by <code>hn_get_top_posts</code> in <code>mcp_server.tools</code>.
+      Backed by <code>hn_get_top_posts</code>, <code>ph_get_top_products</code>,
+      and <code>reddit_get_top_posts</code> in <code>mcp_server.tools</code>.
     </div>
   </body>
 </html>
@@ -186,12 +247,15 @@ TEMPLATE = """
 
 @app.route("/", methods=["GET"])
 def index() -> Any:
-    # Read limit from query params, default 10
+    # Read query params with defaults
     raw_limit = request.args.get("limit", "10")
+    source = request.args.get("source", "hackernews")
+
     error = None
     error_details = None
     posts: List[Dict[str, Any]] = []
 
+    # Parse + clamp limit
     try:
         limit = int(raw_limit)
         if limit <= 0:
@@ -203,22 +267,77 @@ def index() -> Any:
         error_details = str(exc)
         limit = 10
 
-    # Call your existing tool handler
-    result = hn_get_top_posts_handler({"limit": limit})
-
-    if isinstance(result, dict) and result.get("error"):
-        error = result.get("error")
-        error_details = result.get("details")
+    # Choose handler based on source
+    handler = None
+    if source == "hackernews":
+        handler = hn_get_top_posts_handler
+    elif source == "producthunt":
+        handler = ph_get_top_products_handler
+    elif source == "reddit":
+        handler = reddit_get_top_posts_handler
     else:
-        posts = result  # type: ignore[assignment]
+        if not error:
+            error = f"Unknown source: {source}"
+
+    # Call handler if we have one and no previous error
+    if handler and not error:
+        result = handler({"limit": limit})
+
+        # If handler returned an error-like dict
+        if isinstance(result, dict) and result.get("error"):
+            error = result.get("error")
+            error_details = result.get("details")
+        else:
+            # Normalize result items into a common shape
+            normalized: List[Dict[str, Any]] = []
+            rank_counter = 1
+            for item in result:  # type: ignore[assignment]
+                # Safely probe multiple key names
+                title = (
+                    item.get("title")
+                    or item.get("name")
+                    or "(no title)"
+                )
+                link = (
+                    item.get("link")
+                    or item.get("url")
+                    or item.get("discussion_url")
+                    or ""
+                )
+                points = (
+                    item.get("points")
+                    or item.get("score")
+                    or item.get("votes")
+                    or item.get("votes_count")
+                )
+                comments = (
+                    item.get("comments")
+                    or item.get("num_comments")
+                    or item.get("comments_count")
+                )
+
+                normalized.append(
+                    {
+                        "rank": item.get("rank", rank_counter),
+                        "title": title,
+                        "link": link,
+                        "points": points,
+                        "comments": comments,
+                        "source": source.capitalize(),
+                    }
+                )
+                rank_counter += 1
+
+            posts = normalized
 
     return render_template_string(
-        TEMPLATE,
-        limit=limit,
-        posts=posts,
-        error=error,
-        error_details=error_details,
-    )
+    TEMPLATE,
+    limit=limit,
+    posts=posts,
+    error=error,
+    error_details=error_details,
+    selected_source=source,
+)
 
 
 if __name__ == "__main__":
