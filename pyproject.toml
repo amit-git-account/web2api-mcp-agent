@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "web2api-mcp"
+version = "0.1.0"
+description = "A Model Context Protocol (MCP) server that lets Claude call real-world web APIs (Hacker News, Product Hunt, Reddit) via a unified interface."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Amit Tomar", email = "amit.tomar@gmail.com" }
+]
+
+# sync these with your requirements.txt
+dependencies = [
+  "mcp>=0.1.0",     # if you're using the official python MCP lib
+  "flask>=3.0.0",
+  "requests>=2.31.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/<your-github-username>/web2api-mcp-tool"
+
+[tool.setuptools]
+packages = ["mcp_server", "mcp_server.adapters", "mcp_server.utils"]
+
+[project.scripts]
+# This will give users a shell command: `web2api-mcp`
+# Make sure run_mcp.py has a `main()` function.
+web2api-mcp = "web2api_mcp.run_mcp:main"
+

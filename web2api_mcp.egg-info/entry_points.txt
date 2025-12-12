@@ -1,0 +1,2 @@
+[console_scripts]
+web2api-mcp = web2api_mcp.run_mcp:main

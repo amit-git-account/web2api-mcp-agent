@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: web2api-mcp
+Version: 0.1.0
+Summary: A Model Context Protocol (MCP) server that lets Claude call real-world web APIs (Hacker News, Product Hunt, Reddit) via a unified interface.
+Author-email: Amit Tomar <amit.tomar@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/<your-github-username>/web2api-mcp-tool
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: mcp>=0.1.0
+Requires-Dist: flask>=3.0.0
+Requires-Dist: requests>=2.31.0
+
 # Web2API MCP Tool  
 ## Why this exists
 
