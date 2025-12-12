@@ -20,8 +20,8 @@ Meta’s Marketing API is powerful, but it’s not LLM-friendly out of the box:
 - 🔌 **Local MCP Server** compatible with Claude Desktop  
 - ⚡ **Fetch top posts** from:
   - Hacker News  
-  - Product Hunt  
-  - Reddit  
+  - Reddit
+  - Product Hunt (next tool - TODO)
 - 🧩 Tools implemented in Python with clean handlers  
 - 🔒 Secure, local execution  
 - 🎯 Deterministic responses (no hallucination about API data)  
