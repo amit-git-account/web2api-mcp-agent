@@ -74,7 +74,7 @@ web2api  ✓ connected
 
 
 ### 6. Once connected to Claude, use
-Show me today's top Product Hunt launches using web2api.
+Show me today's top HackerNews or Reddit posts using web2api.
 
 
 
