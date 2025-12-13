@@ -1,17 +1,4 @@
 # Web2API MCP Tool  
-## Why this exists
-
-Meta’s Marketing API is powerful, but it’s not LLM-friendly out of the box:
-- auth + permissions are tricky
-- the API surface is huge and easy to misuse
-- insights queries need safe defaults and guardrails
-
-**meta-ads-mcp** exposes a small, safe, structured tool surface over the Marketing API so an MCP client (Claude Desktop, etc.) can:
-- discover ad accounts
-- list campaigns
-- pull insights with sane defaults
-- fail with friendly, structured errors
-- stay scoped via an explicit `AD_ACCOUNT_ALLOWLIST` (safety-by-default)
 
 ---
 
