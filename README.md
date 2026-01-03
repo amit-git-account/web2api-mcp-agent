@@ -21,9 +21,6 @@ Below is the high-level request/response flow between Claude ↔ MCP Layer ↔ E
 
 ![Architecture Diagram](./architecture.png)
 
-*(Replace `architecture.png` with your generated PNG:  
-`A_flowchart_digital_diagram_illustrates_the_archit.png`)*
-
 ---
 
 ## 📦 Installation
