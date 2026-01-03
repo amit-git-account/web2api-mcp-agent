@@ -20,6 +20,7 @@
 Below is the high-level request/response flow between Claude ↔ MCP Layer ↔ External APIs:
 
 ![Architecture Diagram](./architecture.png)
+<img width="1409" height="495" alt="architecture" src="https://github.com/user-attachments/assets/1cebc3bf-43d2-4110-bb4d-e0c780c0b32c" />
 
 ---
 
